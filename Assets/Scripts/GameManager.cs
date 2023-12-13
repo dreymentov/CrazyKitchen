@@ -1,15 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
+using UnityEditor.Experimental.GraphView;
+using UnityEditor;
+using UnityEngine.AI;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance;
+    public static PlayerControllers pc;
+
     [Header("Player")]
     public GameObject player;
 
     [Header("GameSetting")]
     public int difficultyLevel;
     public int numberOfTomatoes;
+    public GameObject prefabKnife;
 
     [Header("Chief's image")]
     public List<GameObject> chiefsImages;
@@ -21,6 +29,7 @@ public class GameManager : MonoBehaviour
     public string questTextNote2 = "ÇÀÄÀÍÈÅ: íàéòè 5 ÿèö.";
     public string questTextNote3 = "ÇÀÄÀÍÈÅ: Íàéòè íîæ øåôà è ïîëîæèòü åãî íà ìåñòî.";
 
+    public string TextStartGameNote = "ÇÀÄÀÍÈÅ: ïğî÷èòàòü ïåğâóş çàïèñêó íà êóõíå";
     public string TextNoteBeforeQuest1 = "ÎÃÓÇÎÊ! Òû îïîçäàë íà ğàáîòó! Ïîêà íå îòêëåèøü ıòèêåòêè îò âñåõ áàíàíîâ, íå ïîêàçûâàéñÿ ìíå íà ãëàçà!";
     public string TextNoteAfterQuest1 = "ÇÀÄÀÍÈÅ: ïğî÷èòàòü íîâóş çàïèñêó íà êóõíå.";
     public string TextNoteBeforeQuest2 = "Èíâàëèäû! Ãäå ìîè ÿéöà?!";
@@ -28,7 +37,7 @@ public class GameManager : MonoBehaviour
     public string TextNoteBeforeQuest3 = "Êòî èç âàñ, èíâàëèäîâ, ïîñìåë âçÿòü ìîé íîæ? ß çíàş, ÷òî ıòî òû, îãóçîê! Òåáå êîíåö.";
 
     public bool isStartGame;
-    public bool isStartedGame;
+    public bool isInvokeStartGame;
     public bool isTakeFirstNote;
     public bool isTakeSecondNote;
     public bool isTakeThirdNote;
@@ -47,11 +56,36 @@ public class GameManager : MonoBehaviour
     public bool isSetKnifeOnPlace;
     public bool isInvokedFinish;
 
+    public List<GameObject> Notes;
+    public List<GameObject> Bananas;
+    public List<GameObject> Eggs;
+    public GameObject Knife;
+
+    [Header("UI system")]
+    public GameObject NotePanel;
+    public TextMeshProUGUI NoteText;
+    public float timeLifeNote = 5f;
+
+    public GameObject QuestPanel;
+    public TextMeshProUGUI QuestText;
+
+    public GameObject TakeItemPanel;
+    public TextMeshProUGUI TakedItemIntText;
+
+    public GameObject DifficultyLevelPanel;
+    public GameObject PlayerUIStatPanel;
+    public TextMeshProUGUI AmmoIntText;
+    public TextMeshProUGUI DurationSpeedIntText;
+
 
     void Awake()
     {
+        Instance = this;
+        PlayerTrigger.gm = Instance;
+        PlayerControllers.gm = Instance;
+
         isStartGame = false;
-        isStartedGame = false;
+        isInvokeStartGame = false;
         isTakeFirstNote = false;
         isTakeSecondNote = false;
         isTakeThirdNote = false;
@@ -69,31 +103,69 @@ public class GameManager : MonoBehaviour
         isTakeKnife = false;
         isSetKnifeOnPlace = false;
         isInvokedFinish = false;
+
+        NotePanel.SetActive(false);
+        TakeItemPanel.SetActive(false);
+        QuestPanel.SetActive(false);
+        PlayerUIStatPanel.SetActive(false);
+
+        //StartCoroutine();
     }
     // Start is called before the first frame update
     void Start()
     {
-        
+        foreach (var note in Notes)
+        {
+            note.gameObject.SetActive(false);
+        }
+
+        foreach(var banana in Bananas)
+        {
+            banana.gameObject.SetActive(false);
+        }
+
+        foreach (var egg in Eggs)
+        {
+            egg.gameObject.SetActive(false);
+        }
+
+        foreach (var image in chiefsImages)
+        {
+            image.gameObject.SetActive(false);
+            image.GetComponent<NavMeshAgent>().speed = 0;
+        }
+
+        Knife.gameObject.SetActive(false);
+
+        Time.timeScale = 0f;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(isStartGame == true && isStartedGame == false) 
+
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            isStartedGame = true;
-            StartCoroutine(StartedGame());
+            Cursor.lockState = CursorLockMode.None;
         }
 
-        if(takeBananaInt == 10 && isRespawnedSecondNote == false)
+        if (isStartGame == true && isTakeFirstNote == false) 
+        {
+            isTakeFirstNote = true;
+            StartCoroutine(Quest1());
+        }
+
+        if(takeBananaInt >= 10 && isRespawnedSecondNote == false)
         {
             isRespawnedSecondNote = true;
+            QuestText.text = TextNoteAfterQuest1;
             StartCoroutine(Quest2());
         }
 
-        if(takeEggsInt == 5 && isRespawnedThirdNote == false)
+        if(takeEggsInt >= 5 && isRespawnedThirdNote == false)
         {
             isRespawnedThirdNote = true;
+            QuestText.text = TextNoteAfterQuest2;
             StartCoroutine(Quest3());
         }
 
@@ -102,6 +174,30 @@ public class GameManager : MonoBehaviour
             isInvokedFinish = true;
             StartCoroutine(EndGame());
         }
+
+        // UI Updating
+        if(isTakeThirdNote == true)
+        {
+            if(isTakeKnife == false)
+            {
+                TakedItemIntText.text = "ÍÎÆ ØÅÔÀ: X 0";
+            }
+            else
+            {
+                TakedItemIntText.text = "ÍÎÆ ØÅÔÀ: X 1";
+            }
+        }
+        else if(isTakeSecondNote == true)
+        {
+            TakedItemIntText.text = "ßÉÖÀ: X " + takeEggsInt;
+        }
+        else if (isTakeFirstNote == true)
+        {
+            TakedItemIntText.text = "ÁÀÍÀÍÛ: X " + takeBananaInt;
+        }
+
+        AmmoIntText.text = "X "+pc.ammoOfPotatoes;
+        DurationSpeedIntText.text = "" + ((int)pc.durationBonusSpeed + (-1 * (int)pc.cooldownBonusSpeed)) + "s / " + (int)pc.durationBonusSpeed + "s";
     }
 
     void TakeDifficultyLevel(int difficultyInt)
@@ -139,44 +235,91 @@ public class GameManager : MonoBehaviour
         }
         else return;
 
+        QuestPanel.gameObject.SetActive(true);
+        QuestText.text = TextStartGameNote;
+        DifficultyLevelPanel.SetActive(false);
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
         isStartGame = true;
     }
 
-    void TakeEasyLevel()
+    public void TakeEasyLevel()
     {
         TakeDifficultyLevel(0);
     }
 
-    void TakeNormalLevel()
+    public void TakeNormalLevel()
     {
         TakeDifficultyLevel(1);
     }
 
-    void TakeHardLevel()
+    public void TakeHardLevel()
     {
         TakeDifficultyLevel(2);
     }
 
-    void TakeVeryHardLevel()
+    public void TakeVeryHardLevel()
     {
         TakeDifficultyLevel(3);
     }
 
-    void TakeNote1()
+    public void TakeNote1()
     {
-        //ÌÅÒÎÄ ÈÇÌÅÍÅÍÈß ÒÅÊÑÒÀ Â ÏÀÍÅËÈ ÇÀÄÀ×È
-        //ÌÅÒÎÄ ÏÎßÂËÅÍÈß ÁÀÍÀÍÎÂ Â ÎÏĞÅÄÅËÅÍÍÛÕ ÌÅÑÒÀÕ
+        isTakeFirstNote = true;
+
+        TakeItemPanel.SetActive(true);
+        NoteText.text = TextNoteBeforeQuest1;
+        NotePanel.SetActive(true);
+        QuestText.text = questTextNote1;
+        QuestPanel.SetActive(true);
+        PlayerUIStatPanel.SetActive(true);
+
+        StartCoroutine(DisableNotePanel());
+        
+        foreach(var banana in Bananas)
+        {
+            banana.gameObject.SetActive(true);
+        }
+
+        foreach(var image in chiefsImages)
+        {
+            if(image != null)
+            {
+                image.gameObject.SetActive(true);
+                image.GetComponent<NavMeshAgent>().speed = speedChiefsImages;
+            }
+        }
     }
 
-    void TakeNote2()
+    public void TakeNote2()
     {
-        //ÌÅÒÎÄ ÈÇÌÅÍÅÍÈß ÒÅÊÑÒÀ Â ÏÀÍÅËÈ ÇÀÄÀ×È
-        //ÌÅÒÎÄ ÏÎßÂËÅÍÈß ÏÎÌÈÄÎĞÎÂ Â ÎÏĞÅÄÅËÅÍÍÛÕ ÌÅÑÒÀÕ
+        isTakeSecondNote = true;
+
+        TakeItemPanel.SetActive(true);
+        NoteText.text = TextNoteBeforeQuest2;
+        NotePanel.SetActive(true);
+        QuestText.text = questTextNote2;
+        QuestPanel.SetActive(true);
+
+        StartCoroutine(DisableNotePanel());
+
+        foreach (var egg in Eggs)
+        {
+            egg.gameObject.SetActive(true);
+        }
     }
-    void TakeNote3()
+    public void TakeNote3()
     {
-        //ÌÅÒÎÄ ÈÇÌÅÍÅÍÈß ÒÅÊÑÒÀ Â ÏÀÍÅËÈ ÇÀÄÀ×È
-        //ÌÅÒÎÄ ÏÎßÂËÅÍÈß ÍÎÆÀ ØÅÔÀ Â ÎÏĞÅÄÅËÅÍÍÛÕ ÌÅÑÒÀÕ
+        isTakeThirdNote = true;
+        TakeItemPanel.SetActive(true);
+        NoteText.text = TextNoteBeforeQuest3;
+        NotePanel.SetActive(true);
+        QuestText.text = questTextNote3;
+        QuestPanel.SetActive(true);
+
+        StartCoroutine(DisableNotePanel());
+        
+        Knife.gameObject.SetActive(true);
     }
 
     IEnumerator StartedGame()
@@ -188,9 +331,19 @@ public class GameManager : MonoBehaviour
         yield return null;
     }
 
+    IEnumerator Quest1()
+    {
+        isRespawnedFirstNote = true;
+        Notes[0].gameObject.SetActive(true);
+        //ÌÅÒÎÄ ÑÎÇÄÀÍÈß ÂÒÎĞÎÉ ÇÀÏÈÑÊÈ
+        //ÌÅÒÎÄ ÈÇÌÅÍÅÍÈß ÒÅÊÑÒÀ Â ÏÀÍÅËÈ ÇÀÄÀ×È
+        yield return null;
+    }
+
     IEnumerator Quest2()
     {
         isRespawnedSecondNote = true;
+        Notes[1].gameObject.SetActive(true);
         //ÌÅÒÎÄ ÑÎÇÄÀÍÈß ÂÒÎĞÎÉ ÇÀÏÈÑÊÈ
         //ÌÅÒÎÄ ÈÇÌÅÍÅÍÈß ÒÅÊÑÒÀ Â ÏÀÍÅËÈ ÇÀÄÀ×È
         yield return null;
@@ -199,15 +352,34 @@ public class GameManager : MonoBehaviour
     IEnumerator Quest3()
     {
         isRespawnedThirdNote = true;
+        Notes[2].gameObject.SetActive(true);
         //ÌÅÒÎÄ ÑÎÇÄÀÍÈß ÒĞÅÒÜÅÉ ÇÀÏÈÑÊÈ
         //ÌÅÒÎÄ ÈÇÌÅÍÅÍÈß ÒÅÊÑÒÀ Â ÏÀÍÅËÈ ÇÀÄÀ×È
         yield return null;
     }
 
+    IEnumerator DisableNotePanel()
+    {
+        yield return new WaitForSeconds(timeLifeNote);
+        NotePanel.SetActive(false);
+        yield return null;
+    }
     IEnumerator EndGame()
     {
-        //ÌÅÒÎÄ ÓÍÈ×ÒÎÆÅÍÈß ÊÀĞÒÈÍÎÊ ØÅÔÀ
-        //ÌÅÒÎÄ ÂÛÇÎÂÀ ÏÎÁÅÄÍÛÕ İËÅÌÅÍÒÎÂ UI 
+        foreach(var image in chiefsImages)
+        {
+            if(image != null)
+            {
+                Destroy(image.gameObject);
+            }
+        }
+
+        NotePanel.SetActive(false);
+        TakeItemPanel.SetActive(false);
+        QuestPanel.SetActive(false);
+        PlayerUIStatPanel.SetActive(false);
+
+        Debug.Log("WIN THE GAME");
         yield return null;
     }
 }

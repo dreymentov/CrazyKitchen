@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerControllers : MonoBehaviour
@@ -7,6 +8,8 @@ public class PlayerControllers : MonoBehaviour
     //reference the transform
     Transform t;
     Rigidbody rb;
+    public static PlayerControllers Instance;
+    public static GameManager gm;
 
     [Header("Player Interaction")]
     public GameObject cam;
@@ -24,6 +27,10 @@ public class PlayerControllers : MonoBehaviour
 
     [Header("Player Movement")]
     public float speed = 1;
+    public float speedBonus = 0;
+    public float durationBonusSpeed = 5f;
+    public float cooldownBonusSpeed = 5f;
+    public float bonusSpeedFromSteak = 10f;
     float moveX;
     float moveZ;
 
@@ -36,11 +43,24 @@ public class PlayerControllers : MonoBehaviour
     [Header("Use Tomatoes")]
     public GameObject tomatoGO;
     public int ammoOfPotatoes;
+    public float powerShot = 20f;
+
+    [Header("InteractableObject")]
+    public InteractableObject currentHoverObject;
+    public float playerReach;
 
     private void Awake()
     {
+        Instance = this;
+
         rb = GetComponent<Rigidbody>();
         t = this.transform;
+
+        InteractableObject.pc = Instance;
+        PlayerTrigger.pc = Instance;
+        GameManager.pc = Instance;
+
+        cooldownBonusSpeed = durationBonusSpeed;
     }
     // Start is called before the first frame update
     void Start()
@@ -61,11 +81,42 @@ public class PlayerControllers : MonoBehaviour
         Shot();
 
         UpdateAnim();
+
+        currentHoverObject = HoverObject();
+
+        if (currentHoverObject != null)
+        {
+            //outline
+            currentHoverObject.Highlight();
+
+            //check if the player left clicks
+            if (currentHoverObject.interactable && Input.GetMouseButtonDown(0))
+            {
+                //InteractWithObject();
+            }
+        }
+
+        if(Input.GetMouseButtonDown(0))
+        {
+            if(ammoOfPotatoes > 0)
+            {
+                ammoOfPotatoes--;
+                Vector3 playerPosForward = new Vector3(this.transform.position.x, this.transform.position.y + 1.5f, this.transform.position.z);
+
+                GameObject g = Instantiate(tomatoGO, playerPosForward, transform.rotation);
+                g.transform.eulerAngles = transform.forward; //если ты хочешь смотреть вперед именно от этого объекта (на котором скрипт)
+                g.GetComponent<Rigidbody>().AddForce(cam.transform.forward * powerShot, ForceMode.Impulse);
+                //Vector3.forward - это относительно мирового пространства
+            }
+        }
     }
 
     private void FixedUpdate()
     {
+        cooldownBonusSpeed += Time.fixedDeltaTime;
+
         Move();
+        BonusSpeedFunc();
     }
 
     void Move()
@@ -73,7 +124,7 @@ public class PlayerControllers : MonoBehaviour
         moveX = Input.GetAxis("Horizontal");
         moveZ = Input.GetAxis("Vertical");
 
-        t.Translate(new Quaternion(0, t.rotation.y, 0, t.rotation.w) * new Vector3(moveX, 0, moveZ) * Time.deltaTime * speed, Space.World);
+        t.Translate(new Quaternion(0, t.rotation.y, 0, t.rotation.w) * new Vector3(moveX, 0, moveZ) * Time.deltaTime * (speed + speedBonus), Space.World);
 
         if (moveX == 0 && moveZ == 0)
         {
@@ -83,6 +134,19 @@ public class PlayerControllers : MonoBehaviour
         else
         {
             isStanding = false;
+        }
+    }
+    void BonusSpeedFunc()
+    {
+        if (cooldownBonusSpeed < durationBonusSpeed)
+        {
+            speedBonus = bonusSpeedFromSteak;
+        }
+        else if(cooldownBonusSpeed >= durationBonusSpeed)
+        {
+            cooldownBonusSpeed = durationBonusSpeed;
+            speedBonus = 0;
+
         }
     }
 
@@ -111,6 +175,55 @@ public class PlayerControllers : MonoBehaviour
         {
             ammoOfPotatoes--;
             //МЕТОД ВЫЗОВА tomatoGO И ЭТОТ ЭКЗЕМПЛЯР ЛЕТАЕТ ВПЕРЕД. 
+        }
+    }
+
+    InteractableObject HoverObject()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(cam.transform.position, cam.transform.forward, out hit, playerReach))
+        {
+            return hit.collider.gameObject.GetComponent<InteractableObject>();
+        }
+
+        return null;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Note"))
+        {
+            if(gm.takeEggsInt >= 5)
+            {
+                gm.TakeNote3();
+            }
+            else if(gm.takeBananaInt >= 10)
+            {
+                gm.TakeNote2();
+            }
+            else
+            {
+                gm.TakeNote1();
+            }
+        }
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Note"))
+        {
+            if (gm.takeEggsInt >= 5)
+            {
+                gm.TakeNote3();
+            }
+            else if (gm.takeBananaInt >= 10)
+            {
+                gm.TakeNote2();
+            }
+            else
+            {
+                gm.TakeNote1();
+            }
         }
     }
 }

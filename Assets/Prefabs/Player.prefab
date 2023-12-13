@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6058404487485487917}
   m_Layer: 0
   m_Name: Main Camera
-  m_TagString: MainCamera
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 3608780679468887009}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.99, z: -0.08}
+  m_LocalPosition: {x: 0, y: 1.708, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -106,7 +106,7 @@ GameObject:
   - component: {fileID: 6575508411595989100}
   m_Layer: 0
   m_Name: Cube
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -197,6 +197,84 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &5331616441112203111
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3018962768220500454}
+  - component: {fileID: 8037306973460150925}
+  - component: {fileID: 659898012677830612}
+  m_Layer: 0
+  m_Name: PlayerTrigger
+  m_TagString: Player
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3018962768220500454
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5331616441112203111}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.25, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7503625932934126392}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8037306973460150925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5331616441112203111}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d39826126950490429994c60630cfc86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  banana: {fileID: 0}
+  egg: {fileID: 0}
+  knife: {fileID: 0}
+  tomato: {fileID: 0}
+  steak: {fileID: 0}
+  setKnife: {fileID: 0}
+  inBananaZone: 0
+  inEggZone: 0
+  inKnifeZone: 0
+  inTomatoZone: 0
+  inSteakZone: 0
+  inSetKnifeZone: 0
+--- !u!65 &659898012677830612
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5331616441112203111}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3, y: 3, z: 3}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &6463874317235244070
 GameObject:
   m_ObjectHideFlags: 0
@@ -232,6 +310,7 @@ Transform:
   m_Children:
   - {fileID: 224645243242429173}
   - {fileID: 1843656871767141564}
+  - {fileID: 3018962768220500454}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &-4053989292292596883
@@ -250,8 +329,18 @@ MonoBehaviour:
   sensitivity: 1
   rotationMin: -70
   rotationMax: 70
-  speed: 1
+  speed: 10
+  speedBonus: 0
+  durationBonusSpeed: 5
+  cooldownBonusSpeed: 5
+  bonusSpeedFromSteak: 10
   playerAnim: {fileID: 8007571158948071409}
+  isStanding: 0
+  tomatoGO: {fileID: 5661537099355141260, guid: 87085575f28426145bbc55b099031cd9, type: 3}
+  ammoOfPotatoes: 0
+  powerShot: 100
+  currentHoverObject: {fileID: 0}
+  playerReach: 2
 --- !u!95 &8007571158948071409
 Animator:
   serializedVersion: 5
@@ -295,10 +384,10 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 14
   m_CollisionDetection: 0
 --- !u!136 &6332173853511225116
 CapsuleCollider:

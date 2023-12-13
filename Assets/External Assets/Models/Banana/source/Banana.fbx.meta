@@ -3,7 +3,12 @@ guid: 76eb77b1f586c394e8b666f640418d0a
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Banana PBR
+    second: {fileID: 2100000, guid: 9d63e1c39804e3a4e938ea3d1053e6b9, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -3,7 +3,17 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Banana
+  - Egg
+  - Knife
+  - Note
+  - SetForKnife
+  - Steak
+  - Tomato
+  - Ammo
+  - Ground
+  - Bot
   layers:
   - Default
   - TransparentFX
